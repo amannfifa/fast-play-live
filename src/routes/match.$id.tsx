@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ArrowLeft, Share2, Eye, MapPin, Whistle } from "lucide-react";
+import { ArrowLeft, Share2, Eye, MapPin, ShieldAlert } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Flag } from "@/components/Flag";
 import { HlsPlayer } from "@/components/HlsPlayer";
@@ -105,7 +105,7 @@ function MatchPage() {
             <Stat icon={<Eye className="h-4 w-4" />} label="Viewers" value={match.viewer_count.toLocaleString()} />
           )}
           {match.venue && <Stat icon={<MapPin className="h-4 w-4" />} label="Venue" value={match.venue} />}
-          {match.referee && <Stat icon={<Whistle className="h-4 w-4" />} label="Referee" value={match.referee} />}
+          {match.referee && <Stat icon={<ShieldAlert className="h-4 w-4" />} label="Referee" value={match.referee} />}
           {match.city && <Stat icon={<MapPin className="h-4 w-4" />} label="City" value={match.city} />}
         </section>
 
