@@ -14,16 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      matches: {
+        Row: {
+          away_flag: string | null
+          away_score: number
+          away_team: string
+          city: string | null
+          competition: string | null
+          corners_away: number | null
+          corners_home: number | null
+          created_at: string
+          home_flag: string | null
+          home_score: number
+          home_team: string
+          id: string
+          kickoff_at: string
+          minute: number | null
+          possession_home: number | null
+          red_away: number | null
+          red_home: number | null
+          referee: string | null
+          replay_url: string | null
+          shots_away: number | null
+          shots_home: number | null
+          sport_key: string
+          status: Database["public"]["Enums"]["match_status"]
+          stream_url: string | null
+          updated_at: string
+          venue: string | null
+          viewer_count: number | null
+          yellow_away: number | null
+          yellow_home: number | null
+        }
+        Insert: {
+          away_flag?: string | null
+          away_score?: number
+          away_team: string
+          city?: string | null
+          competition?: string | null
+          corners_away?: number | null
+          corners_home?: number | null
+          created_at?: string
+          home_flag?: string | null
+          home_score?: number
+          home_team: string
+          id?: string
+          kickoff_at: string
+          minute?: number | null
+          possession_home?: number | null
+          red_away?: number | null
+          red_home?: number | null
+          referee?: string | null
+          replay_url?: string | null
+          shots_away?: number | null
+          shots_home?: number | null
+          sport_key: string
+          status?: Database["public"]["Enums"]["match_status"]
+          stream_url?: string | null
+          updated_at?: string
+          venue?: string | null
+          viewer_count?: number | null
+          yellow_away?: number | null
+          yellow_home?: number | null
+        }
+        Update: {
+          away_flag?: string | null
+          away_score?: number
+          away_team?: string
+          city?: string | null
+          competition?: string | null
+          corners_away?: number | null
+          corners_home?: number | null
+          created_at?: string
+          home_flag?: string | null
+          home_score?: number
+          home_team?: string
+          id?: string
+          kickoff_at?: string
+          minute?: number | null
+          possession_home?: number | null
+          red_away?: number | null
+          red_home?: number | null
+          referee?: string | null
+          replay_url?: string | null
+          shots_away?: number | null
+          shots_home?: number | null
+          sport_key?: string
+          status?: Database["public"]["Enums"]["match_status"]
+          stream_url?: string | null
+          updated_at?: string
+          venue?: string | null
+          viewer_count?: number | null
+          yellow_away?: number | null
+          yellow_home?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_sport_key_fkey"
+            columns: ["sport_key"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      sports: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          key: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          key: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          key?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      match_status: "upcoming" | "live" | "finished" | "replay"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +308,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      match_status: ["upcoming", "live", "finished", "replay"],
+    },
   },
 } as const
