@@ -55,8 +55,8 @@ export function WatchLiveButton({ matchId, redirect, live = false }: Props) {
       className={[
         "group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl px-6 py-5 text-lg font-bold transition active:scale-[0.99]",
         live
-          ? "bg-destructive text-destructive-foreground shadow-[0_0_40px_-8px_hsl(var(--destructive))] hover:brightness-110"
-          : "bg-accent-green text-accent-green-foreground shadow-[0_0_32px_-10px_var(--color-accent-green,theme(colors.emerald.400))] hover:brightness-110",
+          ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/40 hover:brightness-110"
+          : "bg-accent-green text-accent-green-foreground shadow-lg shadow-accent-green/30 hover:brightness-110",
       ].join(" ")}
     >
       {live && (
