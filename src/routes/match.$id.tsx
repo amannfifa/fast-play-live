@@ -146,7 +146,7 @@ function OfflinePlayer({ kickoff }: { kickoff: string }) {
       <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
         <div className="text-sm font-semibold uppercase tracking-widest text-accent-green">Stream starting soon</div>
         <Countdown to={kickoff} onElapsed={() => qc.invalidateQueries()} />
-        <p className="max-w-xs text-xs text-muted-foreground">The player will switch on automatically the moment the broadcast begins.</p>
+        <p className="max-w-xs text-xs text-muted-foreground">The live stream will become available automatically at kickoff.</p>
       </div>
     </div>
   );
