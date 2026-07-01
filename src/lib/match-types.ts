@@ -37,3 +37,16 @@ export interface Sport {
   icon: string | null;
   sort_order: number;
 }
+
+export interface MatchRedirect {
+  id: string;
+  match_id: string;
+  primary_url: string | null;
+  backup_url: string | null;
+  open_in_new_tab: boolean;
+  enabled: boolean;
+  click_count: number;
+  clicks_today: number;
+  last_clicked_at: string | null;
+  last_reset_date: string;
+}

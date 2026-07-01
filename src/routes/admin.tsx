@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Plus, Save, Trash2, Radio, Square, RotateCcw } from "lucide-react";
+import { LogOut, Plus, Save, Trash2, Radio, Square, RotateCcw, ListVideo, Link2 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { matchesQuery, sportsQuery } from "@/lib/queries";
 import type { Match, MatchStatus } from "@/lib/match-types";
+import { RedirectManager } from "@/components/admin/RedirectManager";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin · FootBeats.Live" }, { name: "robots", content: "noindex" }] }),
@@ -128,6 +129,7 @@ function AdminDashboard() {
   const sportKey = filter || sports[0]?.key || "fifa-wc";
   const { data: matches = [] } = useQuery({ ...matchesQuery(sportKey), enabled: !!sportKey });
   const [creating, setCreating] = useState(false);
+  const [tab, setTab] = useState<"matches" | "redirects">("matches");
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["matches"] });
 
@@ -140,6 +142,50 @@ function AdminDashboard() {
         </button>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-1 rounded-full bg-secondary p-1 text-sm">
+        <TabPill active={tab === "matches"} onClick={() => setTab("matches")} icon={<ListVideo className="h-3.5 w-3.5" />} label="Matches" />
+        <TabPill active={tab === "redirects"} onClick={() => setTab("redirects")} icon={<Link2 className="h-3.5 w-3.5" />} label="Redirect Manager" />
+      </div>
+
+      {tab === "redirects" ? (
+        <RedirectManager />
+      ) : (
+        <MatchesTab
+          sports={sports}
+          sportKey={sportKey}
+          setFilter={setFilter}
+          matches={matches}
+          creating={creating}
+          setCreating={setCreating}
+          refresh={refresh}
+        />
+      )}
+    </Shell>
+  );
+}
+
+function TabPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold transition ${active ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function MatchesTab({ sports, sportKey, setFilter, matches, creating, setCreating, refresh }: {
+  sports: { key: string; name: string }[];
+  sportKey: string;
+  setFilter: (v: string) => void;
+  matches: Match[];
+  creating: boolean;
+  setCreating: (v: boolean) => void;
+  refresh: () => void;
+}) {
+  return (
+    <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select value={sportKey} onChange={(e) => setFilter(e.target.value)} className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm">
           {sports.map((s) => <option key={s.key} value={s.key}>{s.name}</option>)}
@@ -161,7 +207,7 @@ function AdminDashboard() {
         {matches.map((m) => <AdminMatchRow key={m.id} match={m} onChange={refresh} />)}
         {matches.length === 0 && <div className="text-center text-sm text-muted-foreground">No matches.</div>}
       </div>
-    </Shell>
+    </>
   );
 }
 

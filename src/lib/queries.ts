@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Match, Sport } from "./match-types";
+import type { Match, MatchRedirect, Sport } from "./match-types";
 
 export const sportsQuery = () =>
   queryOptions({
@@ -39,5 +39,31 @@ export const matchQuery = (id: string) =>
         .maybeSingle();
       if (error) throw error;
       return data as Match | null;
+    },
+  });
+
+export const matchRedirectQuery = (matchId: string) =>
+  queryOptions({
+    queryKey: ["match-redirect", matchId],
+    queryFn: async (): Promise<MatchRedirect | null> => {
+      const { data, error } = await supabase
+        .from("match_redirects")
+        .select("*")
+        .eq("match_id", matchId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as MatchRedirect | null;
+    },
+  });
+
+export const allRedirectsQuery = () =>
+  queryOptions({
+    queryKey: ["match-redirects"],
+    queryFn: async (): Promise<MatchRedirect[]> => {
+      const { data, error } = await supabase
+        .from("match_redirects")
+        .select("*");
+      if (error) throw error;
+      return (data ?? []) as MatchRedirect[];
     },
   });
