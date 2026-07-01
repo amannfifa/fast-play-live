@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { ArrowLeft, Share2, Eye, MapPin, ShieldAlert } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Flag } from "@/components/Flag";
-import { HlsPlayer } from "@/components/HlsPlayer";
 import { Countdown } from "@/components/Countdown";
-import { matchQuery } from "@/lib/queries";
+import { WatchLiveButton } from "@/components/WatchLiveButton";
+import { AdBannerResponsive } from "@/components/ads/AdBanner";
+import { matchQuery, matchRedirectQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/match/$id")({
@@ -21,13 +22,17 @@ function MatchPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const { data: match } = useSuspenseQuery(matchQuery(id));
+  const { data: redirect } = useQuery(matchRedirectQuery(id));
 
-  // Realtime sync
+  // Realtime sync (match + redirect)
   useEffect(() => {
     const ch = supabase
       .channel(`match-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${id}` }, () => {
         qc.invalidateQueries({ queryKey: ["match", id] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "match_redirects", filter: `match_id=eq.${id}` }, () => {
+        qc.invalidateQueries({ queryKey: ["match-redirect", id] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -44,9 +49,8 @@ function MatchPage() {
     );
   }
 
-  const isLive = match.status === "live" && !!match.stream_url;
-  const showReplay = match.status === "replay" && !!match.replay_url;
-  const streamSrc = isLive ? match.stream_url! : showReplay ? match.replay_url! : "";
+  const isLive = match.status === "live";
+  const isUpcoming = match.status === "upcoming";
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -70,11 +74,20 @@ function MatchPage() {
           </button>
         </div>
 
-        {streamSrc ? (
-          <HlsPlayer src={streamSrc} />
-        ) : (
+        {isUpcoming ? (
           <OfflinePlayer kickoff={match.kickoff_at} />
+        ) : (
+          <div className="rounded-2xl bg-gradient-to-br from-card to-secondary p-6 ring-1 ring-border">
+            <WatchLiveButton matchId={id} redirect={redirect ?? null} live={isLive} />
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Clicking will open the live stream in {redirect?.open_in_new_tab === false ? "the same" : "a new"} tab.
+            </p>
+          </div>
         )}
+
+        <div className="mt-5">
+          <AdBannerResponsive />
+        </div>
 
         <header className="mt-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-accent-green">
