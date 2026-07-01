@@ -6,6 +6,9 @@ import { Navbar } from "@/components/Navbar";
 import { SportSelector } from "@/components/SportSelector";
 import { MatchCard, DateDivider } from "@/components/MatchCard";
 import { sportsQuery, matchesQuery } from "@/lib/queries";
+import { AdBannerResponsive } from "@/components/ads/AdBanner";
+import { NativeBanner } from "@/components/ads/NativeBanner";
+import { DIRECT_LINK_URL } from "@/lib/ads";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,6 +37,10 @@ function Index() {
       <main className="mx-auto max-w-3xl">
         <h1 className="sr-only">Live sports streaming on FootBeats.Live</h1>
 
+        <div className="px-4 pt-4">
+          <AdBannerResponsive />
+        </div>
+
         <div className="pt-4">
           <SportSelector sports={sports} value={sport} onChange={setSport} />
         </div>
@@ -47,6 +54,23 @@ function Index() {
             <MatchList sport={sport} tab={tab} />
           </div>
         </section>
+
+        <section className="mx-auto mt-6 max-w-3xl px-4">
+          <NativeBanner />
+        </section>
+
+        <footer className="mx-auto mt-8 max-w-3xl px-4 pb-6 text-center text-xs text-muted-foreground">
+          <a
+            href={DIRECT_LINK_URL}
+            target="_blank"
+            rel="noopener sponsored"
+            className="hover:text-accent-green"
+          >
+            Sponsored partner
+          </a>
+          <span className="mx-2 opacity-40">·</span>
+          <span>© {new Date().getFullYear()} FootBeats.Live</span>
+        </footer>
       </main>
     </div>
   );
