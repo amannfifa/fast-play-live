@@ -16,33 +16,58 @@ export const Route = createFileRoute("/admin")({
 function AdminPage() {
   const [session, setSession] = useState<{ userId: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [roleCheckError, setRoleCheckError] = useState<string | null>(null);
 
   useEffect(() => {
     const sub = supabase.auth.onAuthStateChange((_e, s) => {
+      console.log("[admin] auth state changed. user id:", s?.user?.id ?? null);
       setSession(s?.user ? { userId: s.user.id } : null);
     });
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) console.error("[admin] getSession() error:", error);
+      console.log("[admin] initial session user id:", data.session?.user?.id ?? null);
       setSession(data.session?.user ? { userId: data.session.user.id } : null);
     });
     return () => { sub.data.subscription.unsubscribe(); };
   }, []);
 
   useEffect(() => {
-    if (!session) { setIsAdmin(null); return; }
+    if (!session) { setIsAdmin(null); setRoleCheckError(null); return; }
     (async () => {
-      const { data } = await supabase
+      console.log("[admin] checking admin role for user id:", session.userId);
+      const { data, error, status, statusText } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.userId)
         .eq("role", "admin")
         .maybeSingle();
+
+      if (error) {
+        // Previously this error was silently swallowed, which meant a
+        // permission-denied or RLS failure looked identical to "not an
+        // admin". Surface it clearly so the real cause is never hidden.
+        console.error("[admin] role check FAILED — this is likely a database/RLS problem, not a role assignment problem:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          httpStatus: status,
+          httpStatusText: statusText,
+        });
+        setRoleCheckError(error.message);
+        setIsAdmin(false);
+        return;
+      }
+
+      console.log("[admin] role check result — row found:", data, "=> isAdmin:", !!data);
+      setRoleCheckError(null);
       setIsAdmin(!!data);
     })();
   }, [session]);
 
   if (!session) return <AuthGate />;
   if (isAdmin === null) return <Shell><div className="p-10 text-center text-muted-foreground">Checking access…</div></Shell>;
-  if (!isAdmin) return <NotAdmin />;
+  if (!isAdmin) return <NotAdmin error={roleCheckError} />;
 
   return <AdminDashboard />;
 }
@@ -95,8 +120,30 @@ function AuthGate() {
   );
 }
 
-function NotAdmin() {
+function NotAdmin({ error }: { error?: string | null }) {
   const userId = useUserId();
+
+  if (error) {
+    return (
+      <Shell>
+        <div className="card-elevated mx-auto mt-8 max-w-md p-6 text-center">
+          <h1 className="font-display text-xl font-bold text-destructive">Admin check failed</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This isn't a missing role — the database rejected the role lookup itself. Check the browser console
+            for the full error. Common cause: a permission or RLS policy issue on <code>public.user_roles</code> /
+            <code>public.has_role()</code>, not your role assignment.
+          </p>
+          <pre className="mt-3 overflow-auto rounded-lg bg-destructive/10 p-3 text-left text-xs text-destructive">
+            {error}
+          </pre>
+          <button onClick={() => supabase.auth.signOut()} className="mt-4 inline-flex items-center gap-1 text-sm text-accent-green">
+            <LogOut className="h-4 w-4" /> Sign out
+          </button>
+        </div>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <div className="card-elevated mx-auto mt-8 max-w-md p-6 text-center">
