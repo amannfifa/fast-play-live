@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      match_redirects: {
+        Row: {
+          backup_url: string | null
+          click_count: number
+          clicks_today: number
+          country_overrides: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          last_clicked_at: string | null
+          last_reset_date: string
+          match_id: string
+          open_in_new_tab: boolean
+          primary_url: string | null
+          provider: string | null
+          scheduled_switch_at: string | null
+          scheduled_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          backup_url?: string | null
+          click_count?: number
+          clicks_today?: number
+          country_overrides?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_clicked_at?: string | null
+          last_reset_date?: string
+          match_id: string
+          open_in_new_tab?: boolean
+          primary_url?: string | null
+          provider?: string | null
+          scheduled_switch_at?: string | null
+          scheduled_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          backup_url?: string | null
+          click_count?: number
+          clicks_today?: number
+          country_overrides?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_clicked_at?: string | null
+          last_reset_date?: string
+          match_id?: string
+          open_in_new_tab?: boolean
+          primary_url?: string | null
+          provider?: string | null
+          scheduled_switch_at?: string | null
+          scheduled_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_redirects_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           away_flag: string | null
@@ -177,6 +242,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_redirect_click: {
+        Args: { _match_id: string }
+        Returns: undefined
       }
     }
     Enums: {
