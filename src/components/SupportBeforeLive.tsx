@@ -29,7 +29,7 @@ interface Props {
  * This component is purely presentational and does NOT modify any
  * redirect URLs, backend, or stream logic.
  */
-export function SupportBeforeLiveModal({
+export function SupportBeforeLive({
   open,
   onSupport,
   onExited,
