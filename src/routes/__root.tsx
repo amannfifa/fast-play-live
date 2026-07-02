@@ -108,6 +108,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+                <script src="https://quge5.com/88/tag.min.js" data-zone="254989" async data-cfasync="false"></script>
       </head>
       <body>
         {children}
