@@ -131,6 +131,46 @@
   50% { opacity: 0.55; transform: scale(0.92); }
 }
 
+@keyframes stream-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes stream-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 0.75; transform: scale(1.15); }
+}
+
+@keyframes stream-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(12deg); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.30; transform: scale(0.9); }
+  50% { opacity: 0.60; transform: scale(1.1); }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.30; transform: scale(0.9); }
+  50% { opacity: 0.60; transform: scale(1.1); }
+}
+
+@keyframes pulse-backdrop {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes float-glow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
 @utility live-dot {
   display: inline-block;
   width: 0.5rem;
