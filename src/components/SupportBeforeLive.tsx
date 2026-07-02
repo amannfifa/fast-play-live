@@ -75,6 +75,9 @@ export function SupportBeforeLive({
           if (countdownIntervalRef.current) {
             clearInterval(countdownIntervalRef.current);
           }
+
+          onExited?. ();
+          
           return 0;
         }
         return next;
