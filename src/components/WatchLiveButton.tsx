@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { PlayCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MatchRedirect } from "@/lib/match-types";
-import { SupportBeforeLive } from "@/components/SupportBeforeLiveModal";
+import { SupportBeforeLive } from "@/components/SupportBeforeLive";
 import { DIRECT_LINK_URL } from "@/lib/ads";
 
 interface Props {
@@ -132,11 +132,11 @@ export function WatchLiveButton({ matchId, redirect, live = false }: Props) {
         <ExternalLink className="h-4 w-4 opacity-80" aria-hidden="true" />
       </button>
 
-      <SupportBeforeLiveModal
+      <SupportBeforeLive
         open={showSupport}
         onSupport={handleSupport}
-        onExited={handleContinue}
-        countdownSeconds={20}
+        onContinue={handleContinue}
+        onClose={handleClose}
       />
     </>
   );
