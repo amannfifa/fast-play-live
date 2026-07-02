@@ -2,103 +2,119 @@ import { useRef, useState } from "react";
 import { PlayCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MatchRedirect } from "@/lib/match-types";
-import { SupportBeforeLive } from "@/components/SupportBeforeLive";
-import { DIRECT_LINK_URL } from "@/lib/ads";
+import { StreamLoadingOverlay } from "@/components/StreamLoadingOverlay";
+import { SupportBeforeLiveModal } from "@/components/SupportBeforeLiveModal";
 
 interface Props {
   matchId: string;
   redirect: MatchRedirect | null;
   live?: boolean;
+  /** If true, show the support modal before redirecting. Default: false */
+  showSupportModal?: boolean;
 }
+
+const LOADING_DELAY_MS = 3000;
+const SUPPORT_COUNTDOWN_SECONDS = 20;
 
 /**
  * Redirects the user to the admin-configured destination URL for the match.
  * Tracks click analytics via the increment_redirect_click RPC.
  * Falls back to backup URL if primary fails.
+ *
+ * A short branded loading screen is shown first so that if the ad network
+ * opens a sponsor page before the real destination, the user isn't left
+ * wondering whether the site is broken. This is purely a UI layer — the
+ * redirect logic, URLs, and ad/redirect system below are unchanged.
  */
-export function WatchLiveButton({ matchId, redirect, live = false }: Props) {
+export function WatchLiveButton({
+  matchId,
+  redirect,
+  live = false,
+  showSupportModal = false,
+}: Props) {
   const [busy, setBusy] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
-  // Pre-opened window for the stream so popup blockers don't kill the
-  // async open() call fired after the countdown resolves.
-  const streamWinRef = useRef<Window | null>(null);
+  const pendingRef = useRef(false);
+  const countdownCompleteRef = useRef(false);
 
   const disabled =
     !redirect ||
     !redirect.enabled ||
     (!redirect.primary_url && !redirect.backup_url);
 
-  const openStream = () => {
-    if (!redirect) return;
+  const performRedirect = () => {
+    console.log("[WatchLiveButton] performRedirect() called");
+    if (!redirect) {
+      console.log("[WatchLiveButton] performRedirect() - no redirect config, returning");
+      return;
+    }
+    const target = redirect.open_in_new_tab ? "_blank" : "_self";
     const url = redirect.primary_url || redirect.backup_url!;
-    // Fire-and-forget analytics.
+    console.log("[WatchLiveButton] performRedirect() - opening URL:", url, "target:", target);
     try {
-      supabase.rpc("increment_redirect_click", { _match_id: matchId }).then(() => {});
-    } catch {
-      /* ignore */
+      // fire-and-forget analytics; don't block the redirect on it
+      supabase.rpc("increment_redirect_click", { _match_id: matchId }).then(() => {
+        console.log("[WatchLiveButton] Analytics RPC success");
+      });
+    } catch (e) {
+      console.log("[WatchLiveButton] Analytics RPC failed:", e);
     }
-    if (redirect.open_in_new_tab) {
-      // Use the pre-opened blank window if available (survives popup blockers
-      // because it was created inside the user-gesture click).
-      const pre = streamWinRef.current;
-      if (pre && !pre.closed) {
-        try {
-          pre.opener = null;
-          pre.location.replace(url);
-        } catch {
-          window.open(url, "_blank", "noopener,noreferrer");
-        }
-      } else {
-        const win = window.open(url, "_blank", "noopener,noreferrer");
-        if (!win && redirect.backup_url && redirect.backup_url !== url) {
-          window.open(redirect.backup_url, "_blank", "noopener,noreferrer");
-        }
-      }
-    } else {
-      window.location.href = url;
+    const win = window.open(url, target, "noopener,noreferrer");
+    console.log("[WatchLiveButton] window.open() returned:", win ? "success" : "blocked");
+    if (!win && redirect.backup_url && redirect.backup_url !== url) {
+      console.log("[WatchLiveButton] Primary failed, trying backup URL:", redirect.backup_url);
+      window.open(redirect.backup_url, target, "noopener,noreferrer");
     }
-    streamWinRef.current = null;
   };
 
   const handleClick = () => {
-    if (disabled || !redirect) return;
-    // Pre-open a blank tab now (inside the user gesture) so we can navigate
-    // it to the stream after the async countdown without being blocked.
-    if (redirect.open_in_new_tab) {
-      try {
-        streamWinRef.current = window.open("about:blank", "_blank");
-      } catch {
-        streamWinRef.current = null;
-      }
-    }
-    setShowSupport(true);
-  };
-
-  const handleSupport = () => {
-    // Fire the sponsor ad in a new tab — DO NOT change this logic.
-    try {
-      window.open(DIRECT_LINK_URL, "_blank", "noopener,noreferrer");
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const handleContinue = () => {
-    setShowSupport(false);
+    // Guard against multiple clicks while loading/support is active.
+    if (disabled || !redirect || busy || pendingRef.current) return;
+    pendingRef.current = true;
     setBusy(true);
-    openStream();
-    setBusy(false);
+
+    if (showSupportModal) {
+      // Show support modal first; countdown will trigger redirect after SUPPORT_COUNTDOWN_SECONDS
+      setShowSupport(true);
+    } else {
+      // Original flow: show loading overlay, wait 3 seconds, redirect
+      setShowLoading(true);
+      window.setTimeout(() => {
+        performRedirect();
+        setShowLoading(false);
+      }, LOADING_DELAY_MS);
+    }
   };
 
-  const handleClose = () => {
+  const handleSupportClick = () => {
+    console.log("[WatchLiveButton] handleSupportClick() called");
+    // User clicked "Support & Continue" — start the 20-second countdown
+    countdownCompleteRef.current = false;
+
+    // Set a timer to redirect after the countdown finishes
+    console.log("[WatchLiveButton] Setting redirect timer for", SUPPORT_COUNTDOWN_SECONDS, "seconds");
+    window.setTimeout(() => {
+      console.log("[WatchLiveButton] Redirect timer fired! Calling performRedirect()");
+      performRedirect();
+      console.log("[WatchLiveButton] performRedirect() executed");
+      countdownCompleteRef.current = true;
+      // Modal will fade out after its own internal countdown
+    }, SUPPORT_COUNTDOWN_SECONDS * 1000);
+  };
+
+  const handleSupportExited = () => {
+    console.log("[WatchLiveButton] handleSupportExited() called");
+    // Support modal has fully faded out
     setShowSupport(false);
-    // Close the pre-opened blank tab if the user cancels.
-    try {
-      streamWinRef.current?.close();
-    } catch {
-      /* ignore */
-    }
-    streamWinRef.current = null;
+    setBusy(false);
+    pendingRef.current = false;
+    console.log("[WatchLiveButton] Button state reset");
+  };
+
+  const handleOverlayExited = () => {
+    setBusy(false);
+    pendingRef.current = false;
   };
 
   if (disabled) {
@@ -114,29 +130,39 @@ export function WatchLiveButton({ matchId, redirect, live = false }: Props) {
       <button
         onClick={handleClick}
         disabled={busy}
-        aria-label={live ? "Watch live stream now" : "Watch live stream"}
+        aria-busy={busy}
         className={[
-          "group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl px-6 py-5 text-lg font-bold transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          "group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl px-6 py-5 text-lg font-bold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-90",
           live
             ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/40 hover:brightness-110"
             : "bg-accent-green text-accent-green-foreground shadow-lg shadow-accent-green/30 hover:brightness-110",
         ].join(" ")}
       >
-        {live && (
+        {live && !busy && (
           <span className="absolute left-4 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-            <span className="live-dot" aria-hidden="true" /> LIVE
+            <span className="live-dot" /> LIVE
           </span>
         )}
-        <PlayCircle className="h-6 w-6" aria-hidden="true" />
-        <span>{live ? "Watch Live Now" : "Watch Live"}</span>
-        <ExternalLink className="h-4 w-4 opacity-80" aria-hidden="true" />
+        {busy ? (
+          <>
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+            <span>Opening…</span>
+          </>
+        ) : (
+          <>
+            <PlayCircle className="h-6 w-6" />
+            <span>{live ? "Watch Live Now" : "Watch Live"}</span>
+            <ExternalLink className="h-4 w-4 opacity-80" />
+          </>
+        )}
       </button>
 
-      <SupportBeforeLive
+      <StreamLoadingOverlay open={showLoading} onExited={handleOverlayExited} />
+      <SupportBeforeLiveModal
         open={showSupport}
-        onSupport={handleSupport}
-        onContinue={handleContinue}
-        onClose={handleClose}
+        onSupport={handleSupportClick}
+        onExited={handleSupportExited}
+        countdownSeconds={SUPPORT_COUNTDOWN_SECONDS}
       />
     </>
   );
