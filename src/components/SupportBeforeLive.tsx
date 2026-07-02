@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Heart, Loader2, ShieldCheck, X } from "lucide-react";
-import { Logo } from "@/components/Logo";
 
 interface Props {
   open: boolean;
@@ -145,7 +144,11 @@ export function SupportBeforeLive({ open, onSupport, onContinue, onClose, second
 
         <div className="flex flex-col items-center text-center">
           <div className="mb-4 flex items-center gap-2 text-white/80">
-            <Logo className="h-6 w-6" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
+              </svg>
+            </span>
             <span className="text-sm font-semibold tracking-wide">FootBeats Live</span>
           </div>
 
