@@ -17,6 +17,3 @@ export function adsEnabled(): boolean {
   }
   return true;
 }
-
-export const DIRECT_LINK_URL =
-  "https://www.effectivecpmnetwork.com/ba1598zhi?key=3b54760fa9e4f6a238cdbde34f0ac8a2";
