@@ -4,11 +4,9 @@ import { ChevronRight } from "lucide-react";
 interface Props {
   /** Controls visibility */
   open: boolean;
-  /** Called when user clicks "Continue" */
   onSupport?: () => void;
-  /** Called when component fully unmounts after countdown */
-  onExited?: () => void;
-  /** Countdown duration in seconds (default: 20) */
+  onContinue?: () => void;
+  onClose?: () => void:
   countdownSeconds?: number;
 }
 
@@ -32,7 +30,8 @@ interface Props {
 export function SupportBeforeLive({
   open,
   onSupport,
-  onExited,
+  onContinue,
+  onClose.
   countdownSeconds = 20,
 }: Props) {
   const [mounted, setMounted] = useState(open);
