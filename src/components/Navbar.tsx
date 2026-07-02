@@ -36,6 +36,7 @@ export function Navbar() {
         <div className="border-t border-border bg-card">
           <nav className="mx-auto flex max-w-3xl flex-col gap-1 p-3 text-sm">
             <Link to="/" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 hover:bg-secondary">Home</Link>
+            <Link to="/admin" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 hover:bg-secondary">Admin</Link>
           </nav>
         </div>
       )}

@@ -1,185 +1,233 @@
-import { useEffect, useRef, useState } from "react";
-import { Heart, PlayCircle, X } from "lucide-react";
-import stadiumBg from "@/assets/stadium-bg.jpg";
-import { Logo } from "./Logo";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Heart, Loader2, ShieldCheck, X } from "lucide-react";
 
 interface Props {
   open: boolean;
-  onClose: () => void;
-  onContinue: () => void;
-  /** Called once when user clicks the support button (fire your ad here). */
+  /** Called once the user presses "Support & Continue". Fire your ad here. */
   onSupport: () => void;
-  countdownSeconds?: number;
+  /** Called after the countdown completes. Must run the existing redirect. */
+  onContinue: () => void;
+  /** Called when the user dismisses before the countdown finishes. */
+  onClose: () => void;
+  seconds?: number;
 }
 
 /**
- * Full-screen premium "Support Before Live Stream" overlay.
- * Preserves parent's redirect/ad logic — this component only handles UI + timing.
+ * Premium "Support before live" overlay.
+ * - Accessible: focus trap, ESC to close, aria-modal, aria-live status.
+ * - Respects prefers-reduced-motion.
+ * - Does NOT touch ad or redirect logic — it just calls the two callbacks.
  */
-export function SupportBeforeLive({
-  open,
-  onClose,
-  onContinue,
-  onSupport,
-  countdownSeconds = 20,
-}: Props) {
+export function SupportBeforeLive({ open, onSupport, onContinue, onClose, seconds = 20 }: Props) {
   const [started, setStarted] = useState(false);
-  const [remaining, setRemaining] = useState(countdownSeconds);
-  const continuedRef = useRef(false);
+  const [remaining, setRemaining] = useState(seconds);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const supportBtnRef = useRef<HTMLButtonElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const firedRef = useRef(false);
 
+  const reducedMotion = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+    [],
+  );
+
+  // Reset internal state whenever the modal is re-opened.
   useEffect(() => {
-    if (!open) {
+    if (open) {
       setStarted(false);
-      setRemaining(countdownSeconds);
-      continuedRef.current = false;
+      setRemaining(seconds);
+      firedRef.current = false;
     }
-  }, [open, countdownSeconds]);
+  }, [open, seconds]);
 
+  // Countdown tick.
   useEffect(() => {
-    if (!started) return;
-    const t = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          clearInterval(t);
-          if (!continuedRef.current) {
-            continuedRef.current = true;
-            onContinue();
-          }
-          return 0;
+    if (!open || !started) return;
+    if (remaining <= 0) {
+      if (!firedRef.current) {
+        firedRef.current = true;
+        onContinue();
+      }
+      return;
+    }
+    const t = window.setTimeout(() => setRemaining((r) => r - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [open, started, remaining, onContinue]);
+
+  // Focus management + ESC + focus trap.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.activeElement as HTMLElement | null;
+    // move focus into dialog
+    requestAnimationFrame(() => supportBtnRef.current?.focus());
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]),[href],input,select,textarea,[tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
         }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [started, onContinue]);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+      prev?.focus?.();
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
-  const progress = ((countdownSeconds - remaining) / countdownSeconds) * 100;
-  const radius = 54;
-  const circ = 2 * Math.PI * radius;
-  const dashOffset = circ * (1 - progress / 100);
-
-  const handleSupport = () => {
-    try { onSupport(); } catch { /* ignore */ }
-    setStarted(true);
-  };
+  const total = seconds;
+  const progress = ((total - remaining) / total) * 100;
+  const circumference = 2 * Math.PI * 46;
+  const dash = (progress / 100) * circumference;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="support-title"
+      aria-describedby="support-desc"
     >
-      {/* Background */}
-      <div className="absolute inset-0 bg-background" />
-      <img
-        src={stadiumBg}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 h-full w-full object-cover opacity-30 blur-md scale-110"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/60 to-background/95" />
-
-      {/* Close */}
-      {!started && (
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-foreground/80 backdrop-blur transition hover:bg-white/20"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      )}
-
-      {/* Glass card */}
+      {/* Backdrop */}
       <div
-        className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl sm:p-8 animate-scale-in"
-        style={{ boxShadow: "0 30px 80px -20px oklch(0 0 0 / 0.6)" }}
+        aria-hidden="true"
+        className={`absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.15),transparent_60%),linear-gradient(180deg,#050807_0%,#02060a_100%)] ${
+          reducedMotion ? "" : "animate-in fade-in duration-300"
+        }`}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-30 mix-blend-screen"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 20% 30%, rgba(52,211,153,0.35), transparent 40%), radial-gradient(circle at 80% 70%, rgba(20,184,166,0.25), transparent 45%)",
+        }}
+      />
+
+      <div
+        ref={dialogRef}
+        className={`relative w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-xl sm:p-8 ${
+          reducedMotion ? "" : "animate-in fade-in zoom-in-95 duration-300"
+        }`}
       >
-        <div className="mb-6 flex items-center justify-center">
-          <Logo />
-        </div>
+        <button
+          ref={closeBtnRef}
+          onClick={onClose}
+          aria-label="Close and return"
+          className="absolute right-3 top-3 rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
-        {!started ? (
-          <>
-            <h2 className="font-display text-center text-2xl font-extrabold leading-tight sm:text-3xl">
-              Support FootBeats Live <span className="inline-block">❤️</span>
-            </h2>
-            <p className="mt-3 text-center text-sm text-muted-foreground sm:text-base">
-              We keep every match free to watch. Opening one sponsor helps cover our streaming costs.
-            </p>
-
-            <button
-              onClick={handleSupport}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-green px-6 py-4 text-base font-bold text-accent-green-foreground shadow-lg shadow-accent-green/30 transition hover:brightness-110 active:scale-[0.99] sm:text-lg"
-            >
-              <Heart className="h-5 w-5" />
-              Support &amp; Continue
-            </button>
-
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              One sponsor helps keep FootBeats Live free for everyone.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="font-display text-center text-xl font-bold sm:text-2xl">
-              Thank you for supporting us
-            </h2>
-            <p className="mt-2 text-center text-sm text-muted-foreground">
-              Please return to this page after viewing the sponsor. You&apos;ll automatically continue to the live stream.
-            </p>
-
-            {/* Circular countdown */}
-            <div className="relative mx-auto mt-6 flex h-32 w-32 items-center justify-center">
-              <svg className="absolute inset-0 -rotate-90" viewBox="0 0 120 120">
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  className="text-white/10"
-                />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={circ}
-                  strokeDashoffset={dashOffset}
-                  className="text-accent-green transition-[stroke-dashoffset] duration-1000 ease-linear"
-                />
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-4 flex items-center gap-2 text-white/80">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
               </svg>
-              <div className="text-center">
-                <div className="font-display text-4xl font-extrabold tabular-nums text-foreground">
-                  {remaining}
-                </div>
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  seconds
+            </span>
+            <span className="text-sm font-semibold tracking-wide">FootBeats Live</span>
+          </div>
+
+          <h2
+            id="support-title"
+            className="flex items-center gap-2 text-2xl font-extrabold text-white sm:text-3xl"
+          >
+            Support FootBeats Live
+            <Heart className="h-6 w-6 text-emerald-400" aria-hidden="true" />
+          </h2>
+
+          <p id="support-desc" className="mt-3 max-w-sm text-sm text-white/70 sm:text-base">
+            We keep every match free to watch. Opening one sponsor helps cover our streaming costs.
+          </p>
+
+          {!started ? (
+            <>
+              <button
+                ref={supportBtnRef}
+                onClick={() => {
+                  onSupport();
+                  setStarted(true);
+                }}
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-4 text-base font-bold text-black shadow-lg shadow-emerald-500/30 transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] sm:text-lg"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                Support &amp; Continue
+              </button>
+              <p className="mt-4 text-xs text-white/50">
+                One sponsor helps keep FootBeats Live free for everyone.
+              </p>
+            </>
+          ) : (
+            <div className="mt-8 flex flex-col items-center" aria-live="polite" aria-atomic="true">
+              <div className="relative h-32 w-32">
+                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                  <circle cx="50" cy="50" r="46" strokeWidth="6" className="fill-none stroke-white/10" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="46"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    className="fill-none stroke-emerald-400"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - dash}
+                    style={reducedMotion ? undefined : { transition: "stroke-dashoffset 1s linear" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-extrabold text-white tabular-nums">{remaining}</span>
+                  <span className="text-[10px] uppercase tracking-widest text-white/50">seconds</span>
                 </div>
               </div>
-            </div>
 
-            {/* Progress bar */}
-            <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full bg-accent-green transition-[width] duration-1000 ease-linear"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+                className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-white/10"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress)}
+                aria-label="Time until stream opens"
+              >
+                <div
+                  className="h-full bg-emerald-400"
+                  style={{
+                    width: `${progress}%`,
+                    transition: reducedMotion ? undefined : "width 1s linear",
+                  }}
+                />
+              </div>
 
-            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <PlayCircle className="h-4 w-4 animate-pulse text-accent-green" />
-              Preparing your live stream…
+              <p className="mt-5 flex items-center justify-center gap-2 text-sm text-white/70">
+                <Loader2 className={`h-4 w-4 ${reducedMotion ? "" : "animate-spin"}`} aria-hidden="true" />
+                Please return to this page after viewing the sponsor. You'll automatically continue to the live stream.
+              </p>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

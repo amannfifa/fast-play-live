@@ -115,8 +115,8 @@ function MatchList({ sport, tab }: { sport: string; tab: "live" | "replay" }) {
   const tomorrow = new Date(Date.now() + 86400000).toDateString();
   const labelFor = (key: string) => {
     if (key === today) return null;
-    if (key === tomorrow) return "Tomorrow, " + new Date(key).toLocaleDateString([], { month: "long", day: "numeric" });
-    return new Date(key).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+    if (key === tomorrow) return "Tomorrow, " + new Date(key).toLocaleDateString("en-GB", { month: "long", day: "numeric" });
+    return new Date(key).toLocaleDateString("en-GB", { weekday: "long", month: "long", day: "numeric" });
   };
 
   return (
