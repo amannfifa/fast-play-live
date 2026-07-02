@@ -34,10 +34,6 @@ function Index() {
       <main className="mx-auto max-w-3xl">
         <h1 className="sr-only">Live sports streaming on FootBeats.Live</h1>
 
-        <div className="px-4 pt-4">
-          <AdBannerResponsive />
-        </div>
-
         <div className="pt-4">
           <SportSelector sports={sports} value={sport} onChange={setSport} />
         </div>
@@ -53,7 +49,6 @@ function Index() {
         </section>
 
         
-
 function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
