@@ -2,33 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 interface Props {
-  /** Controls visibility */
   open: boolean;
-  /** Called when user clicks "Continue" */
   onSupport?: () => void;
-  /** Called when component fully unmounts after countdown */
   onExited?: () => void;
-  /** Countdown duration in seconds (default: 20) */
   countdownSeconds?: number;
 }
 
-/**
- * Premium streaming-platform-inspired modal for the sponsor redirect flow.
- *
- * This is a clean, neutral UX that explains the sponsor flow without
- * feeling like a donation request. It's inspired by professional streaming
- * platforms like Netflix, Prime Video, and DAZN.
- *
- * When opened:
- * 1. Shows a clear, straightforward explanation
- * 2. User clicks "Continue" to proceed
- * 3. Shows a 20-second countdown with progress
- * 4. Automatically continues after countdown
- *
- * The redirect logic is handled by the parent (WatchLiveButton).
- * This component is purely presentational and does NOT modify any
- * redirect URLs, backend, or stream logic.
- */
 export function SupportBeforeLiveModal({
   open,
   onSupport,
@@ -41,23 +20,18 @@ export function SupportBeforeLiveModal({
   const [timeRemaining, setTimeRemaining] = useState(countdownSeconds);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mount/visibility lifecycle
   useEffect(() => {
-    console.log("[SupportBeforeLiveModal] Mount/visibility effect - open:", open);
     if (open) {
       setMounted(true);
       setPhase("explain");
       setTimeRemaining(countdownSeconds);
-      console.log("[SupportBeforeLiveModal] Modal opened - phase reset to explain, time reset to", countdownSeconds);
       const raf = requestAnimationFrame(() => setVisible(true));
       return () => cancelAnimationFrame(raf);
     } else {
-      console.log("[SupportBeforeLiveModal] open is false, setting visible to false");
       setVisible(false);
     }
   }, [open, countdownSeconds]);
 
-  // Unmount after fade-out completes
   useEffect(() => {
     if (!open && mounted) {
       const t = setTimeout(() => {
@@ -68,32 +42,18 @@ export function SupportBeforeLiveModal({
     }
   }, [open, mounted, onExited]);
 
-  // Countdown logic — decrements every second until reaching 0, then closes modal
   useEffect(() => {
-    console.log("[SupportBeforeLiveModal] Countdown effect - phase:", phase);
-    if (phase !== "countdown") {
-      console.log("[SupportBeforeLiveModal] Phase is not countdown, returning early");
-      return;
-    }
+    if (phase !== "countdown") return;
 
-    console.log("[SupportBeforeLiveModal] Starting countdown interval");
-    // Start interval that decrements timeRemaining
     countdownIntervalRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         const next = prev - 1;
-        console.log("[SupportBeforeLiveModal] Countdown tick: prev=%d, next=%d", prev, next);
-        // When we hit 0, clear the interval immediately
         if (next <= 0) {
-          console.log("[SupportBeforeLiveModal] Countdown reached 0, clearing interval");
           if (countdownIntervalRef.current) {
             clearInterval(countdownIntervalRef.current);
             countdownIntervalRef.current = null;
           }
-          // Trigger a setTimeout to close the modal after a brief delay
-          // This allows the UI to show "0" before closing
-          console.log("[SupportBeforeLiveModal] Calling setTimeout to setVisible(false)");
           setTimeout(() => {
-            console.log("[SupportBeforeLiveModal] setTimeout callback: calling setVisible(false)");
             setVisible(false);
           }, 100);
         }
@@ -102,7 +62,6 @@ export function SupportBeforeLiveModal({
     }, 1000);
 
     return () => {
-      console.log("[SupportBeforeLiveModal] Countdown effect cleanup");
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
@@ -110,32 +69,19 @@ export function SupportBeforeLiveModal({
     };
   }, [phase]);
 
-  // When modal becomes invisible (countdown reached 0), start fade-out
   useEffect(() => {
-    console.log("[SupportBeforeLiveModal] Visible/phase effect - visible:", visible, "phase:", phase);
     if (!visible && phase === "countdown") {
-      console.log("[SupportBeforeLiveModal] Modal is invisible AND phase is countdown - starting 350ms timeout for unmount");
-      // Wait for fade-out animation to complete, then unmount
       const timer = setTimeout(() => {
-        console.log("[SupportBeforeLiveModal] 350ms timeout complete - calling setMounted(false) and onExited()");
         setMounted(false);
-        console.log("[SupportBeforeLiveModal] onExited callback about to fire");
         onExited?.();
-        console.log("[SupportBeforeLiveModal] onExited callback fired");
       }, 350);
-      return () => {
-        console.log("[SupportBeforeLiveModal] Visible/phase effect cleanup");
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
   }, [visible, phase, onExited]);
 
   const handleContinue = () => {
-    console.log("[SupportBeforeLiveModal] handleContinue() called");
     setPhase("countdown");
-    console.log("[SupportBeforeLiveModal] setPhase('countdown') executed");
     onSupport?.();
-    console.log("[SupportBeforeLiveModal] onSupport() callback executed");
   };
 
   const progress = ((countdownSeconds - timeRemaining) / countdownSeconds) * 100;
@@ -153,7 +99,6 @@ export function SupportBeforeLiveModal({
       ].join(" ")}
       style={{ transitionDuration: "350ms" }}
     >
-      {/* Premium backdrop with subtle stadium gradient */}
       <div
         className="absolute inset-0"
         style={{
@@ -162,7 +107,6 @@ export function SupportBeforeLiveModal({
         }}
       />
 
-      {/* Subtle animated backdrop pulse */}
       <div
         className="absolute inset-0"
         style={{
@@ -174,7 +118,6 @@ export function SupportBeforeLiveModal({
 
       <div className="absolute inset-0 backdrop-blur-sm" />
 
-      {/* Content card with premium glassmorphism */}
       <div
         className={[
           "relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8 shadow-2xl backdrop-blur-xl transition-all duration-350 ease-out",
@@ -186,17 +129,83 @@ export function SupportBeforeLiveModal({
         }}
       >
         {phase === "explain" ? (
-          <ExplainPhase onContinue={handleContinue} />
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground leading-tight">
+                Continue to Live Stream
+              </h2>
+            </div>
+
+            <p className="text-center text-sm sm:text-base text-muted-foreground/95 leading-relaxed">
+              Before opening the stream, a sponsor page will open. This helps us keep
+              FootBeats.Live free for everyone.
+            </p>
+
+            <div className="space-y-3 bg-white/5 rounded-2xl p-4 sm:p-6 border border-white/5">
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground/70 uppercase tracking-widest">
+                Here's what happens next
+              </p>
+              <div className="space-y-2.5">
+                <Step number={1} text="Tap Continue" />
+                <Step number={2} text="A sponsor page opens" />
+                <Step number={3} text="Stay for about 20 seconds" />
+                <Step number={4} text="Return to continue watching" />
+              </div>
+            </div>
+
+            <button
+              onClick={handleContinue}
+              className="group relative w-full flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-accent-green px-6 py-4 text-lg sm:text-xl font-bold text-accent-green-foreground shadow-lg shadow-accent-green/40 transition-all active:scale-[0.98] hover:brightness-110"
+            >
+              <span>Continue</span>
+              <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </button>
+
+            <p className="text-center text-xs sm:text-sm text-muted-foreground/60">
+              A sponsor page will open in a new tab.
+            </p>
+
+            <p className="text-center text-xs text-muted-foreground/50 pt-2">
+              Thank you for helping keep FootBeats.Live free.
+            </p>
+          </div>
         ) : (
-          <CountdownPhase
-            secondsRemaining={timeRemaining}
-            totalSeconds={countdownSeconds}
-            progress={progress}
-          />
+          <div className="space-y-6 text-center">
+            <div className="py-4">
+              <CircularProgressIndicator progress={progress} secondsRemaining={timeRemaining} />
+            </div>
+
+            <div>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+                Sponsor Page Opening…
+              </h2>
+            </div>
+
+            <p className="text-sm sm:text-base text-muted-foreground/90 leading-relaxed">
+              We're preparing your stream. A sponsor page is open in a new tab. Please return here after viewing it.
+            </p>
+
+            <div className="space-y-3">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-accent-green via-accent-green to-accent-green/70 transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground/70">
+                Auto-continuing in {timeRemaining} second{timeRemaining !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            <div className="bg-accent-green/10 rounded-xl p-3 border border-accent-green/20">
+              <p className="text-xs sm:text-sm text-accent-green/90">
+                ✓ Your stream is ready and waiting. You'll be taken there automatically.
+              </p>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Subtle decorative accent (bottom-right) */}
       <div
         className="pointer-events-none absolute -bottom-40 -right-40 h-80 w-80 rounded-full opacity-10"
         style={{
@@ -209,57 +218,6 @@ export function SupportBeforeLiveModal({
   );
 }
 
-function ExplainPhase({ onContinue }: { onContinue: () => void }) {
-  return (
-    <div className="space-y-6">
-      {/* Heading */}
-      <div className="text-center">
-        <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground leading-tight">
-          Continue to Live Stream
-        </h2>
-      </div>
-
-      {/* Explanation text */}
-      <p className="text-center text-sm sm:text-base text-muted-foreground/95 leading-relaxed">
-        Before opening the stream, a sponsor page will open. This helps us keep
-        FootBeats.Live free for everyone.
-      </p>
-
-      {/* Steps section */}
-      <div className="space-y-3 bg-white/5 rounded-2xl p-4 sm:p-6 border border-white/5">
-        <p className="text-xs sm:text-sm font-semibold text-muted-foreground/70 uppercase tracking-widest">
-          Here's what happens next
-        </p>
-        <div className="space-y-2.5">
-          <Step number={1} text="Tap Continue" />
-          <Step number={2} text="A sponsor page opens" />
-          <Step number={3} text="Stay for about 20 seconds" />
-          <Step number={4} text="Return to continue watching" />
-        </div>
-      </div>
-
-      {/* Continue button */}
-      <button
-        onClick={onContinue}
-        className="group relative w-full flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-accent-green px-6 py-4 text-lg sm:text-xl font-bold text-accent-green-foreground shadow-lg shadow-accent-green/40 transition-all active:scale-[0.98] hover:brightness-110"
-      >
-        <span>Continue</span>
-        <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-      </button>
-
-      {/* Sponsor note */}
-      <p className="text-center text-xs sm:text-sm text-muted-foreground/60">
-        A sponsor page will open in a new tab.
-      </p>
-
-      {/* Thank you message */}
-      <p className="text-center text-xs text-muted-foreground/50 pt-2">
-        Thank you for helping keep FootBeats.Live free.
-      </p>
-    </div>
-  );
-}
-
 function Step({ number, text }: { number: number; text: string }) {
   return (
     <div className="flex items-start gap-3">
@@ -267,57 +225,6 @@ function Step({ number, text }: { number: number; text: string }) {
         <span className="text-sm font-semibold text-accent-green">{number}</span>
       </div>
       <p className="text-sm sm:text-base text-foreground/90 pt-0.5">{text}</p>
-    </div>
-  );
-}
-
-function CountdownPhase({
-  secondsRemaining,
-  totalSeconds,
-  progress,
-}: {
-  secondsRemaining: number;
-  totalSeconds: number;
-  progress: number;
-}) {
-  return (
-    <div className="space-y-6 text-center">
-      {/* Heading */}
-      <div>
-        <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
-          Sponsor Page Opening…
-        </h2>
-      </div>
-
-      {/* Circular progress indicator */}
-      <div className="py-4">
-        <CircularProgressIndicator progress={progress} secondsRemaining={secondsRemaining} />
-      </div>
-
-      {/* Message */}
-      <p className="text-sm sm:text-base text-muted-foreground/90 leading-relaxed">
-        We're preparing your stream. A sponsor page is open in a new tab. Please return here after viewing it.
-      </p>
-
-      {/* Progress bar */}
-      <div className="space-y-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-accent-green via-accent-green to-accent-green/70 transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground/70">
-          Auto-continuing in {secondsRemaining} second{secondsRemaining !== 1 ? 's' : ''}
-        </p>
-      </div>
-
-      {/* Reassurance */}
-      <div className="bg-accent-green/10 rounded-xl p-3 border border-accent-green/20">
-        <p className="text-xs sm:text-sm text-accent-green/90">
-          ✓ Your stream is ready and waiting. You'll be taken there automatically.
-        </p>
-      </div>
     </div>
   );
 }
@@ -334,7 +241,6 @@ function CircularProgressIndicator({
 
   return (
     <div className="relative mx-auto flex h-32 sm:h-40 w-32 sm:w-40 items-center justify-center">
-      {/* Background circle */}
       <svg
         className="absolute h-full w-full"
         style={{ transform: "rotate(-90deg)" }}
@@ -351,7 +257,6 @@ function CircularProgressIndicator({
         />
       </svg>
 
-      {/* Progress circle */}
       <svg
         className="absolute h-full w-full transition-all duration-300"
         style={{ transform: "rotate(-90deg)" }}
@@ -374,7 +279,6 @@ function CircularProgressIndicator({
         />
       </svg>
 
-      {/* Center content */}
       <div className="relative flex flex-col items-center justify-center">
         <div className="text-5xl sm:text-6xl font-bold text-accent-green">{secondsRemaining}</div>
         <div className="text-xs sm:text-sm font-medium text-muted-foreground/60 uppercase tracking-widest">
@@ -382,7 +286,6 @@ function CircularProgressIndicator({
         </div>
       </div>
 
-      {/* Pulsing glow background */}
       <div
         className="absolute inset-0 rounded-full opacity-30"
         style={{
@@ -393,4 +296,3 @@ function CircularProgressIndicator({
     </div>
   );
 }
-
