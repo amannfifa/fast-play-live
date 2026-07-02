@@ -6,7 +6,7 @@ interface Props {
   open: boolean;
   onSupport?: () => void;
   onContinue?: () => void;
-  onClose?: () => void:
+  onClose?: () => void;
   countdownSeconds?: number;
 }
 
