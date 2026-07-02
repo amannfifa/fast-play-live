@@ -2,8 +2,6 @@ import { useRef, useState } from "react";
 import { PlayCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MatchRedirect } from "@/lib/match-types";
-import { StreamLoadingOverlay } from "@/components/StreamLoadingOverlay";
-import { SupportBeforeLiveModal } from "@/components/SupportBeforeLiveModal";
 
 interface Props {
   matchId: string;
@@ -69,22 +67,12 @@ export function WatchLiveButton({
   };
 
   const handleClick = () => {
-    // Guard against multiple clicks while loading/support is active.
     if (disabled || !redirect || busy || pendingRef.current) return;
     pendingRef.current = true;
     setBusy(true);
-
-    if (showSupportModal) {
-      // Show support modal first; countdown will trigger redirect after SUPPORT_COUNTDOWN_SECONDS
-      setShowSupport(true);
-    } else {
-      // Original flow: show loading overlay, wait 3 seconds, redirect
-      setShowLoading(true);
-      window.setTimeout(() => {
-        performRedirect();
-        setShowLoading(false);
-      }, LOADING_DELAY_MS);
-    }
+    performRedirect();
+    setBusy(false);
+    pendingRef.current = false;
   };
 
   const handleSupportClick = () => {
@@ -157,13 +145,6 @@ export function WatchLiveButton({
         )}
       </button>
 
-      <StreamLoadingOverlay open={showLoading} onExited={handleOverlayExited} />
-      <SupportBeforeLiveModal
-        open={showSupport}
-        onSupport={handleSupportClick}
-        onExited={handleSupportExited}
-        countdownSeconds={SUPPORT_COUNTDOWN_SECONDS}
-      />
-    </>
+      </>
   );
 }
