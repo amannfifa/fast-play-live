@@ -52,26 +52,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-6 max-w-3xl px-4">
-          <NativeBanner />
-        </section>
-
-        <footer className="mx-auto mt-8 max-w-3xl px-4 pb-6 text-center text-xs text-muted-foreground">
-          <a
-            href={DIRECT_LINK_URL}
-            target="_blank"
-            rel="noopener sponsored"
-            className="hover:text-accent-green"
-          >
-            Sponsored partner
-          </a>
-          <span className="mx-2 opacity-40">·</span>
-          <span>© {new Date().getFullYear()} FootBeats.Live</span>
-        </footer>
-      </main>
-    </div>
-  );
-}
+        
 
 function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
