@@ -175,7 +175,7 @@ export function SupportBeforeLive({ open, onSupport, onContinue, onClose, second
                 className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-4 text-base font-bold text-black shadow-lg shadow-emerald-500/30 transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] sm:text-lg"
               >
                 <ShieldCheck className="h-5 w-5" />
-                Support &amp; Continue
+                Watch Ad &amp; Continue
               </button>
               <p className="mt-4 text-xs text-white/50">
                 One sponsor helps keep FootBeats Live free for everyone.
