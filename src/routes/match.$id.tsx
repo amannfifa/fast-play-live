@@ -6,7 +6,6 @@ import { Navbar } from "@/components/Navbar";
 import { Flag } from "@/components/Flag";
 import { Countdown } from "@/components/Countdown";
 import { WatchLiveButton } from "@/components/WatchLiveButton";
-import { AdBannerResponsive } from "@/components/ads/AdBanner";
 import { matchQuery, matchRedirectQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -84,11 +83,7 @@ function MatchPage() {
             </p>
           </div>
         )}
-
-        <div className="mt-5">
-          <AdBannerResponsive />
-        </div>
-
+        
         <header className="mt-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-accent-green">
             {match.competition ?? "Match"}
