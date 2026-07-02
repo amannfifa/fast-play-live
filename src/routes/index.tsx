@@ -6,9 +6,6 @@ import { Navbar } from "@/components/Navbar";
 import { SportSelector } from "@/components/SportSelector";
 import { MatchCard, DateDivider } from "@/components/MatchCard";
 import { sportsQuery, matchesQuery } from "@/lib/queries";
-import { AdBannerResponsive } from "@/components/ads/AdBanner";
-import { NativeBanner } from "@/components/ads/NativeBanner";
-import { DIRECT_LINK_URL } from "@/lib/ads";
 
 export const Route = createFileRoute("/")({
   head: () => ({
