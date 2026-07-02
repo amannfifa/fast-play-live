@@ -78,7 +78,7 @@ function MatchPage() {
           <OfflinePlayer kickoff={match.kickoff_at} />
         ) : (
           <div className="rounded-2xl bg-gradient-to-br from-card to-secondary p-6 ring-1 ring-border">
-            <WatchLiveButton matchId={id} redirect={redirect ?? null} live={isLive} />
+            <WatchLiveButton matchId={id} redirect={redirect ?? null} live={isLive} showSupportModal={true} />
             <p className="mt-3 text-center text-xs text-muted-foreground">
               Clicking will open the live stream in {redirect?.open_in_new_tab === false ? "the same" : "a new"} tab.
             </p>
